@@ -17,3 +17,5 @@
 ## Installation
 
 Click on releases to the right and download your installer, Mac installer currently, Windows coming soon.
+
+If you want to compile it yourself, there is a library in the Libraries folder that you will need to manually add to the project before it will compile properly.
