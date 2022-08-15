@@ -57,13 +57,26 @@ public class MainUI {
 	private final Timer                    sceneSizeTimer     = new Timer();
 	private       ObservableList<String>   serialList         = FXCollections.observableArrayList();
 	private       int                      lastSerialListSize = 0;
+	private final Map<String, Boolean>     lostFocusMap       = new HashMap<>();
 
 	private final ChangeListener<Boolean> lostFocusListener = (observable, lostFocus, isFocused) -> {
 		if (lostFocus) {
-			closePorts();
+			new Thread(() -> {
+				lostFocusMap.clear();
+				for(Tab tab : tabPane.getTabs()) {
+					String port = tab.getText();
+					lostFocusMap.put(port, serial.isOpen(port));
+				}
+				closePorts();
+			}).start();
 		}
 		else {
-			openPorts();
+			new Thread(() -> {
+				for(String port : lostFocusMap.keySet()) {
+					boolean openPort = lostFocusMap.get(port);
+					if(openPort) openPort(port);
+				}
+			}).start();
 		}
 	};
 
@@ -205,8 +218,10 @@ public class MainUI {
 
 	private void closePorts() {
 		for (Tab tab : tabPane.getTabs()) {
-			lblOpenClosed.change(serial.closePort(tab.getText()));
-			lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
+			Platform.runLater(() -> {
+				lblOpenClosed.change(serial.closePort(tab.getText()));
+				lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
+			});
 		}
 	}
 
@@ -215,29 +230,25 @@ public class MainUI {
 		lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
 	}
 
-	private void openPorts() {
-		new Thread(() -> {
-			for (Tab tab : serialProperties.keySet()) {
-				if (serial.wasOpen(tab.getText())) {
-					if (serial.openPort(tab.getText(), serialProperties.get(tab))) {
-						if (tabPane.getSelectionModel().getSelectedItem() == tab) {
-							Platform.runLater(() -> {
-								lblOpenClosed.change("Open");
-								lblOpenClosed.setTextFill(Color.color(0, .6, 0));
-							});
+	private void openPort(String port) {
+		Tab activeTab = tabPane.getSelectionModel().getSelectedItem();
+		for(Tab tab : tabPane.getTabs()) {
+			if (tab.getText().equals(port)) {
+				boolean success = serial.openPort(port, serialProperties.get(tab));
+				if(tab.equals(activeTab)) {
+					Platform.runLater(() -> {
+						if (success) {
+							lblOpenClosed.change("Open");
+							lblOpenClosed.setTextFill(Color.color(0, .6, 0));
 						}
-					}
-					else {
-						if (tabPane.getSelectionModel().getSelectedItem() == tab) {
-							Platform.runLater(() -> {
-								lblOpenClosed.change("Failed to open");
-								lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
-							});
+						else {
+							lblOpenClosed.change("Failed to open");
+							lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
 						}
-					}
+					});
 				}
 			}
-		}).start();
+		}
 	}
 
 	private void openPort() {

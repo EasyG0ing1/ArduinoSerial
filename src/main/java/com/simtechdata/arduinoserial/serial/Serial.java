@@ -97,7 +97,7 @@ public class Serial {
 					return "Failed";
 				}
 			}
-			else {return "Was Closed";}
+			else {return "Closed";}
 		}
 		return "Port Does Not Exist";
 	}
