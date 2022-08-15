@@ -5,20 +5,22 @@ import java.util.prefs.Preferences;
 public enum LABEL {
 	WIDTH,
 	HEIGHT,
-	FILTER_LIST,
 	FILTER_WIDTH,
 	FILTER_HEIGHT,
-	SAVE_FILTER
+	FILTER_LISTS,
+	LAST_VERSION,
+	THIS_VERSION
 	;
 
 	public String Name(LABEL this) {
 		return switch(this){
 			case WIDTH -> "ScreenWidth";
 			case HEIGHT -> "ScreenHeight";
-			case FILTER_LIST -> "FilterList";
 			case FILTER_WIDTH -> "FilterWindowWidth";
 			case FILTER_HEIGHT -> "FilterWindowHeight";
-			case SAVE_FILTER -> "SaveFilterList";
+			case FILTER_LISTS -> "FilterLists";
+			case LAST_VERSION -> "LastVersion";
+			case THIS_VERSION -> "ThisVersion";
 		};
 	}
 

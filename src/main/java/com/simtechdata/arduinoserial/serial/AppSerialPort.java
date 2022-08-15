@@ -11,7 +11,7 @@ public class AppSerialPort {
 
 	private final SerialPort serialPort;
 	private       boolean    open;
-	private       boolean    wasOpen = false;
+	private       boolean wasOpen  = false;
 
 	public SerialPort getSerialPort() {
 		return serialPort;
@@ -25,10 +25,6 @@ public class AppSerialPort {
 
 	public boolean close() {
 		wasOpen = serialPort.closePort();
-		return wasOpen;
-	}
-
-	public boolean wasOpen() {
 		return wasOpen;
 	}
 

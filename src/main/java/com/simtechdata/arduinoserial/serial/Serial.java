@@ -1,25 +1,17 @@
 package com.simtechdata.arduinoserial.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
-import com.simtechdata.arduinoserial.settings.AppSettings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+
 
 public class Serial {
-
-	public Serial(BooleanProperty clearOnNew) {
-		this.clearOnNew.bind(clearOnNew);
-	}
-
-	private final BooleanProperty        clearOnNew  = new SimpleBooleanProperty(false);
-	private       ObservableList<String> filterList;
-	private       boolean                checkFilter = false;
 
 	public ObservableList<String> getSerialPorts() {
 		String                 os          = System.getProperty("os.name");
@@ -53,8 +45,12 @@ public class Serial {
 		return PortMap.openProperty(activePort);
 	}
 
-	public boolean wasOpen(String serialPortDescription) {
-		return PortMap.wasOpen(serialPortDescription);
+	public boolean keepOpen(String serialPort) {
+		return PortMap.keepOpen(serialPort);
+	}
+
+	public void setKeepOpen(String comPort, boolean keepOpen) {
+		PortMap.setKeepOpen(comPort, keepOpen);
 	}
 
 	public void send(String serialPortDescription, String text) {
@@ -69,10 +65,6 @@ public class Serial {
 		return PortMap.isOpen(description);
 	}
 
-	public void setFilterList(ObservableList<String> filterList) {
-		this.filterList = filterList;
-	}
-
 	public boolean openPort(String description, StringProperty serialData) {
 		if (PortMap.isClosed(description)) {
 			if (PortMap.open(description)) {
@@ -81,10 +73,6 @@ public class Serial {
 			}
 		}
 		return false;
-	}
-
-	public void setCheckFilter(boolean checkFilter) {
-		this.checkFilter = checkFilter;
 	}
 
 	public String closePort(String serialPortDescription) {
@@ -102,47 +90,42 @@ public class Serial {
 		return "Port Does Not Exist";
 	}
 
-	private void listen(String description, StringProperty serialData) {
-		if (PortMap.have(description)) {
-			if (PortMap.isOpen(description)) {
-				new Thread(() -> {
-					SerialPort    serialPort = PortMap.get(description);
-					StringBuilder sb         = new StringBuilder();
-					if (AppSettings.get().saveFilter()) {
-						String   list      = AppSettings.get().getFilterList();
-						String[] listItems = list.split("");
-						filterList = FXCollections.observableArrayList(listItems);
+	private void listen(String comPort, StringProperty serialData) {
+		if (PortMap.isOpen(comPort)) {
+			new Thread(() -> {
+				SerialPort    serialPort = PortMap.get(comPort);
+				StringBuilder sb         = new StringBuilder();
+				boolean       useFilter  = PortMap.hasFilterList(comPort);
+				List<String>  filterList = (useFilter) ? PortMap.getFilterList(comPort) : null;
+				while (serialPort.isOpen()) {
+					serialPort.flushIOBuffers();
+					while (serialPort.isOpen() && serialPort.bytesAvailable() == 0) {
+						sleep(100);
 					}
-					while (serialPort.isOpen()) {
-						serialPort.flushIOBuffers();
-						while (serialPort.isOpen() && (serialPort.bytesAvailable() == 0)) {
-							sleep(100);
-						}
-						if (serialPort.isOpen()) {
-							byte[] readBuffer = new byte[serialPort.bytesAvailable()];
-							serialPort.readBytes(readBuffer, readBuffer.length);
-							String dataIn = new String(readBuffer);
-							if (checkFilter) {
-								for (String filter : filterList) {
-									if (dataIn.contains(filter)) {
-										sb.append(dataIn);
-										break;
-									}
+					if (serialPort.isOpen()) {
+						byte[] readBuffer = new byte[serialPort.bytesAvailable()];
+						serialPort.readBytes(readBuffer, readBuffer.length);
+						String dataIn = new String(readBuffer);
+						if (useFilter) {
+							for (String filter : filterList) {
+								if (dataIn.contains(filter)) {
+									sb.append(dataIn);
+									break;
 								}
+							}
+						}
+						else {
+							if (PortMap.clearOnNew(comPort)) {
+								sb = new StringBuilder(dataIn);
 							}
 							else {
-								if (clearOnNew.getValue().equals(true)) {
-									sb = new StringBuilder(dataIn);
-								}
-								else {
-									sb.append(dataIn);
-								}
+								sb.append(dataIn);
 							}
-							serialData.setValue(sb.toString());
 						}
+						serialData.setValue(sb.toString());
 					}
-				}).start();
-			}
+				}
+			}).start();
 		}
 	}
 
@@ -153,5 +136,37 @@ public class Serial {
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public Boolean hasFilterList(String comPort) {
+		return PortMap.hasFilterList(comPort);
+	}
+
+	public Boolean clearOnNew(String comPort) {
+		return PortMap.clearOnNew(comPort);
+	}
+
+	public void setClearOnNew(String comPort, boolean value) {
+		PortMap.setClearOnNew(comPort, value);
+	}
+
+	public void setFilterList(String comPort, List<String> filterList) {
+		PortMap.setFilterList(comPort, filterList);
+	}
+
+	public void setFilterLists(String json) {
+		PortMap.setFilterLists(json);
+	}
+
+	public List<String> getFilterList(String comPort) {
+		return PortMap.getFilterList(comPort);
+	}
+
+	public String getJsonFilterLists() {
+		return PortMap.getJsonFilterLists();
+	}
+
+	public void clearFilterList(String comPort) {
+		PortMap.clearFilterList(comPort);
 	}
 }

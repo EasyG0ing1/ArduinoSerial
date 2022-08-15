@@ -8,27 +8,33 @@ public class Get {
 
 	public Double screenWidth() {
 		double value = prefs.getDouble(LABEL.WIDTH.Name(), 500.0);
-		return ((value < 500) ? 500 : value);
+		return (value < 500) ? 500 : value;
 	}
 
 	public Double screenHeight() {
 		double value =  prefs.getDouble(LABEL.HEIGHT.Name(), 300.0);
-		return ((value < 300) ? 300 : value);
-	}
-
-	public String getFilterList() {
-		return prefs.get(LABEL.FILTER_LIST.Name(), "");
+		return (value < 300) ? 300 : value;
 	}
 
 	public Double filterWindowWidth() {
-		return prefs.getDouble(LABEL.FILTER_WIDTH.Name(),400);
+		double value = prefs.getDouble(LABEL.FILTER_WIDTH.Name(),400);
+		return (value < 400) ? 400 : value;
 	}
 
 	public Double filterWindowHeight() {
-		return prefs.getDouble(LABEL.FILTER_HEIGHT.Name(),500);
+		double value = prefs.getDouble(LABEL.FILTER_HEIGHT.Name(),500);
+		return (value < 500) ? 500 : value;
 	}
 
-	public boolean saveFilter() {
-		return prefs.getBoolean(LABEL.SAVE_FILTER.Name(), false);
+	public String filterLists() {
+		return prefs.get(LABEL.FILTER_LISTS.Name(), "");
+	}
+
+	public String thisVersion() {
+		return prefs.get(LABEL.THIS_VERSION.Name(), "");
+	}
+
+	public String lastVersion() {
+		return prefs.get(LABEL.LAST_VERSION.Name(), "0.0.0");
 	}
 }

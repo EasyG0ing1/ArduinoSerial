@@ -1,91 +1,125 @@
 package com.simtechdata.arduinoserial.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
+import org.hildan.fxgson.FxGson;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class PortMap {
+class PortMap {
 
-	public static final  Map<String, AppSerialPort>   map             = new HashMap<>();
-	private static final Map<String, BooleanProperty> openPropertyMap = new HashMap<>();
+	public static final Map<String, AppSerialPort> map         = new HashMap<>();
+	private static      FilterLists                filterLists = new FilterLists();
 
-	public static void put(String description, SerialPort serialPort) {
-		if (!map.containsKey(description)) {
+	public static void put(String comPort, SerialPort serialPort) {
+		if (!map.containsKey(comPort)) {
 			serialPort.setComPortParameters(115200, 8, 1, 0);
-			map.put(description, new AppSerialPort(serialPort));
-			openPropertyMap.put(description, new SimpleBooleanProperty(false));
+			map.put(comPort, new AppSerialPort(serialPort));
+			filterLists.newOpenProperty(comPort);
 		}
 	}
 
-	public static SerialPort get(String description) {
-		return map.getOrDefault(description, null).getSerialPort();
+	public static SerialPort get(String comPort) {
+		return map.getOrDefault(comPort, null).getSerialPort();
 	}
 
-	public static boolean open(String description) {
+	public static boolean open(String comPort) {
 		boolean open = false;
-		if (have(description)) {
-			open = map.get(description).open(1000);
+		if (have(comPort)) {
+			open = map.get(comPort).open(1000);
 		}
-		openPropertyMap.get(description).setValue(open);
+		filterLists.setOpen(comPort, open);
 		return open;
 	}
 
-	public static boolean close(String description) {
+	public static boolean close(String comPort) {
 		boolean closed = false;
-		if (have(description)) {
-			closed = map.get(description).close();
-			openPropertyMap.get(description).setValue(!closed);
+		if (have(comPort)) {
+			closed = map.get(comPort).close();
+			filterLists.setOpen(comPort, !closed);
 		}
 		return closed;
 	}
 
-	public static boolean wasOpen(String description) {
-		if (have(description)) {
-			return map.get(description).wasOpen();
+	public static boolean isOpen(String comPort) {
+		if (have(comPort)) {
+			return map.get(comPort).getSerialPort().isOpen();
 		}
 		return false;
 	}
 
-	public static boolean isOpen(String description) {
-		if (have(description)) {
-			return map.get(description).getSerialPort().isOpen();
-		}
-		return false;
-	}
-
-	public static boolean isClosed(String description) {
-		if (have(description)) {
-			return !map.get(description).getSerialPort().isOpen();
+	public static boolean isClosed(String comPort) {
+		if (have(comPort)) {
+			return !map.get(comPort).getSerialPort().isOpen();
 		}
 		return true;
 	}
 
-	public static void send(String description, String text) {
-		if (have(description)) {
-			map.get(description).sendText(text);
+	public static void send(String comPort, String text) {
+		if (have(comPort)) {
+			map.get(comPort).sendText(text);
 		}
 	}
 
-	public static BooleanBinding notOpenProperty(String description) {
-		if (have(description)) {
-			return openPropertyMap.get(description).not();
-		}
-		return null;
+	public static void setFilterLists(String json) {
+		GsonBuilder g    = new GsonBuilder();
+		Gson        gson = FxGson.addFxSupport(g).setPrettyPrinting().create();
+		filterLists = gson.fromJson(json, FilterLists.class);
 	}
 
-	public static BooleanProperty openProperty(String description) {
-		if (have(description)) {
-			return openPropertyMap.get(description);
-		}
-		return null;
+	public static List<String> getFilterList(String comPort) {
+		return filterLists.getFilterList(comPort);
 	}
 
-	public static boolean have(String description) {
-		return map.containsKey(description);
+	public static void setFilterList(String comPort, List<String> filterList) {
+		filterLists.setFilterList(comPort, filterList);
+	}
+
+	public static String getJsonFilterLists() {
+		GsonBuilder g    = new GsonBuilder();
+		Gson        gson = FxGson.addFxSupport(g).enableComplexMapKeySerialization().setPrettyPrinting().create();
+		return gson.toJson(filterLists);
+	}
+
+	public static Boolean hasFilterList(String comPort) {
+		return filterLists.hasFilterList(comPort);
+	}
+
+	public static void clearFilterList(String comPort) {
+		filterLists.clearFilterList(comPort);
+	}
+
+	public static Boolean clearOnNew(String comPort) {
+		return filterLists.clearOnNew(comPort);
+	}
+
+	public static void setClearOnNew(String comPort, boolean value) {
+		filterLists.setClearOnNew(comPort, value);
+	}
+
+	public static Boolean keepOpen(String comPort) {
+		return filterLists.keepOpen(comPort);
+	}
+
+	public static void setKeepOpen(String comPort, boolean value) {
+		filterLists.setKeepOpen(comPort, value);
+	}
+
+	public static BooleanBinding notOpenProperty(String comPort) {
+		return filterLists.notOpenProperty(comPort);
+	}
+
+	public static BooleanProperty openProperty(String comPort) {
+		return filterLists.openProperty(comPort);
+	}
+
+	public static boolean have(String comPort) {
+		return map.containsKey(comPort);
 	}
 
 }

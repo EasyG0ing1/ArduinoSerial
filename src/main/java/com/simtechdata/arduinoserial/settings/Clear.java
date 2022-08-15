@@ -1,5 +1,6 @@
 package com.simtechdata.arduinoserial.settings;
 
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public class Clear {
@@ -14,10 +15,6 @@ public class Clear {
 		prefs.remove(LABEL.HEIGHT.Name());
 	}
 
-	public void filterList() {
-		prefs.remove(LABEL.FILTER_LIST.Name());
-	}
-
 	public void filterWindowWidth() {
 		prefs.remove(LABEL.FILTER_WIDTH.Name());
 	}
@@ -26,8 +23,27 @@ public class Clear {
 		prefs.remove(LABEL.FILTER_HEIGHT.Name());
 	}
 
-	public void saveFilter() {
-		prefs.remove(LABEL.SAVE_FILTER.Name());
+	public void filterLists() {
+		prefs.remove(LABEL.FILTER_LISTS.Name());
+	}
+
+	public void lastVersion() {
+		prefs.remove(LABEL.LAST_VERSION.Name());
+	}
+
+	public void thisVersion() {
+		prefs.remove(LABEL.THIS_VERSION.Name());
+	}
+
+
+
+	public void masterReset() {
+		try {
+			prefs.clear();
+		}
+		catch (BackingStoreException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }
