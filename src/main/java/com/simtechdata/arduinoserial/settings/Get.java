@@ -26,8 +26,8 @@ public class Get {
 		return (value < 500) ? 500 : value;
 	}
 
-	public String filterLists() {
-		return prefs.get(LABEL.FILTER_LISTS.Name(), "");
+	public String appSettings() {
+		return prefs.get(LABEL.APP_SETTINGS.Name(), "");
 	}
 
 	public String thisVersion() {

@@ -11,7 +11,7 @@ public class Main extends Application {
 
 	@Override public void start(Stage primaryStage) {
 		if (!development) {
-			AppSettings.set().thisVersion("1.0.2");
+			AppSettings.set().thisVersion("1.0.3");
 			cleanMetadata();
 		}
 		new MainUI();
@@ -25,14 +25,14 @@ public class Main extends Application {
 			double screenHeight       = AppSettings.get().screenHeight();
 			double filterWindowWidth  = AppSettings.get().filterWindowWidth();
 			double filterWindowHeight = AppSettings.get().filterWindowHeight();
-			String filterLists        = AppSettings.get().filterLists();
+			String appSettings        = AppSettings.get().appSettings();
 			AppSettings.clear().masterReset();
 			AppSettings.set().lastVersion(thisVersion);
 			AppSettings.set().screenWidth(screenWidth);
 			AppSettings.set().screenHeight(screenHeight);
 			AppSettings.set().filterWindowWidth(filterWindowWidth);
 			AppSettings.set().filterWindowHeight(filterWindowHeight);
-			AppSettings.set().filterLists(filterLists);
+			AppSettings.set().appSettings(appSettings);
 		}
 	}
 
@@ -40,6 +40,14 @@ public class Main extends Application {
 		for(String arg : args) {
 			if (arg.toLowerCase().contains("dev")) {
 				development = true;
+			}
+			if(arg.contains("json")) {
+				System.out.println(AppSettings.get().appSettings());
+				System.exit(0);
+			}
+			if(arg.contains("wipe")) {
+				AppSettings.clear().masterReset();
+				System.exit(0);
 			}
 		}
 		launch(args);

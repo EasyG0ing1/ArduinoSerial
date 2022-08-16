@@ -34,9 +34,9 @@ public class Set {
 		}
 	}
 
-	public void filterLists(String value) {
-		AppSettings.clear().filterLists();
-		prefs.put(LABEL.FILTER_LISTS.Name(), value);
+	public void appSettings(String value) {
+		AppSettings.clear().appSettings();
+		prefs.put(LABEL.APP_SETTINGS.Name(), value);
 	}
 
 	public void lastVersion(String value) {

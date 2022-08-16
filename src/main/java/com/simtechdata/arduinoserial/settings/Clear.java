@@ -23,8 +23,8 @@ public class Clear {
 		prefs.remove(LABEL.FILTER_HEIGHT.Name());
 	}
 
-	public void filterLists() {
-		prefs.remove(LABEL.FILTER_LISTS.Name());
+	public void appSettings() {
+		prefs.remove(LABEL.APP_SETTINGS.Name());
 	}
 
 	public void lastVersion() {

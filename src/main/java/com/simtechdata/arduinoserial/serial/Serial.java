@@ -31,54 +31,63 @@ public class Serial {
 				description = port.getDescriptivePortName().trim();
 				list.add(description);
 			}
-			PortMap.put(description, port);
+			if(!description.isEmpty())
+				PortMap.put(description, port);
 		}
 		list.sort(Comparator.comparing(String::toString));
 		return list;
 	}
 
-	public BooleanBinding disableWhenClosedProperty(String activePort) {
-		return PortMap.notOpenProperty(activePort);
+	public BooleanBinding disableWhenClosedProperty(String comPort) {
+		if(comPort.isEmpty()) return null;
+		return PortMap.notOpenProperty(comPort);
 	}
 
-	public BooleanProperty disableWhenOpenProperty(String activePort) {
-		return PortMap.openProperty(activePort);
+	public BooleanProperty disableWhenOpenProperty(String comPort) {
+		if(comPort.isEmpty()) return null;
+		return PortMap.openProperty(comPort);
 	}
 
-	public boolean keepOpen(String serialPort) {
-		return PortMap.keepOpen(serialPort);
+	public boolean keepOpen(String comPort) {
+		if(comPort.isEmpty()) return false;
+		return PortMap.keepOpen(comPort);
 	}
 
 	public void setKeepOpen(String comPort, boolean keepOpen) {
+		if(comPort.isEmpty()) return;
 		PortMap.setKeepOpen(comPort, keepOpen);
 	}
 
-	public void send(String serialPortDescription, String text) {
-		PortMap.send(serialPortDescription, text);
+	public void send(String comPort, String text) {
+		PortMap.send(comPort, text);
 	}
 
-	public boolean isClosed(String description) {
-		return PortMap.isClosed(description);
+	public boolean isClosed(String comPort) {
+		if(comPort.isEmpty()) return true;
+		return PortMap.isClosed(comPort);
 	}
 
-	public boolean isOpen(String description) {
-		return PortMap.isOpen(description);
+	public boolean isOpen(String comPort) {
+		if(comPort.isEmpty()) return false;
+		return PortMap.isOpen(comPort);
 	}
 
-	public boolean openPort(String description, StringProperty serialData) {
-		if (PortMap.isClosed(description)) {
-			if (PortMap.open(description)) {
-				listen(description, serialData);
+	public boolean openPort(String comPort, StringProperty serialData) {
+		if(comPort.isEmpty()) return false;
+		if (PortMap.isClosed(comPort)) {
+			if (PortMap.open(comPort)) {
+				listen(comPort, serialData);
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public String closePort(String serialPortDescription) {
-		if (PortMap.have(serialPortDescription)) {
-			if (PortMap.isOpen(serialPortDescription)) {
-				if (PortMap.close(serialPortDescription)) {
+	public String closePort(String comPort, String caller) {
+		if(comPort.isEmpty()) return "Closed";
+		if (PortMap.have(comPort)) {
+			if (PortMap.isOpen(comPort)) {
+				if (PortMap.close(comPort, caller)) {
 					return "Closed";
 				}
 				else {
@@ -91,6 +100,7 @@ public class Serial {
 	}
 
 	private void listen(String comPort, StringProperty serialData) {
+		if(comPort.isEmpty()) return;
 		if (PortMap.isOpen(comPort)) {
 			new Thread(() -> {
 				SerialPort    serialPort = PortMap.get(comPort);
@@ -139,34 +149,43 @@ public class Serial {
 	}
 
 	public Boolean hasFilterList(String comPort) {
+		if(comPort.isEmpty()) return null;
 		return PortMap.hasFilterList(comPort);
 	}
 
 	public Boolean clearOnNew(String comPort) {
+		if(comPort.isEmpty()) return null;
 		return PortMap.clearOnNew(comPort);
 	}
 
 	public void setClearOnNew(String comPort, boolean value) {
+		if(comPort.isEmpty()) return;
 		PortMap.setClearOnNew(comPort, value);
 	}
 
 	public void setFilterList(String comPort, List<String> filterList) {
+		if(comPort.isEmpty()) return;
 		PortMap.setFilterList(comPort, filterList);
 	}
 
-	public void setFilterLists(String json) {
-		PortMap.setFilterLists(json);
+	public void loadSettings(String json) {
+		PortMap.loadSettings(json);
 	}
 
 	public List<String> getFilterList(String comPort) {
 		return PortMap.getFilterList(comPort);
 	}
 
-	public String getJsonFilterLists() {
-		return PortMap.getJsonFilterLists();
-	}
-
 	public void clearFilterList(String comPort) {
 		PortMap.clearFilterList(comPort);
+	}
+
+	public PortSetting getPortSetting(String comPort) {
+		return PortMap.getPortSetting(comPort);
+	}
+
+	public void setPortSetting(String comPort, PortSetting portSetting) {
+		if(comPort.isEmpty()) return;
+		PortMap.setPortSetting(comPort,portSetting);
 	}
 }

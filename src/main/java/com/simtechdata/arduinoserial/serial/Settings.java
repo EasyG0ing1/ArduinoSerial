@@ -8,11 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class FilterLists {
-	private final        Map<String, List<String>>    filterMap       = new HashMap<>();
-	private final        Map<String, Boolean>         clearMap        = new HashMap<>();
-	private final        Map<String, Boolean>         keepOpenMap     = new HashMap<>();
-	private static final Map<String, BooleanProperty> openPropertyMap = new HashMap<>();
+public class Settings {
+	private final Map<String, List<String>>    filterMap       = new HashMap<>();
+	private final Map<String, Boolean>         clearMap        = new HashMap<>();
+	private final Map<String, Boolean>         keepOpenMap     = new HashMap<>();
+	private final Map<String, BooleanProperty> openPropertyMap = new HashMap<>();
+	private final Map<String, PortSetting>     portSettingMap  = new HashMap<>();
 
 	public void setFilterList(String comPort, List<String> filterList) {
 		if (filterMap.containsKey(comPort)) {
@@ -56,17 +57,17 @@ public class FilterLists {
 	}
 
 	public BooleanBinding notOpenProperty(String comPort) {
-		if (openPropertyMap.containsKey(comPort)) {
-			return openPropertyMap.get(comPort).not();
+		if (!openPropertyMap.containsKey(comPort)) {
+			openPropertyMap.put(comPort, new SimpleBooleanProperty(false));
 		}
-		return null;
+		return openPropertyMap.get(comPort).not();
 	}
 
 	public BooleanProperty openProperty(String comPort) {
-		if (openPropertyMap.containsKey(comPort)) {
-			return openPropertyMap.get(comPort);
+		if (!openPropertyMap.containsKey(comPort)) {
+			openPropertyMap.put(comPort, new SimpleBooleanProperty(false));
 		}
-		return null;
+		return openPropertyMap.get(comPort);
 	}
 
 	public void setOpen(String comPort, boolean value) {
@@ -78,4 +79,20 @@ public class FilterLists {
 	public void newOpenProperty(String comPort) {
 		openPropertyMap.putIfAbsent(comPort, new SimpleBooleanProperty(false));
 	}
+
+	public PortSetting getPortSetting(String comPort) {
+		PortSetting defaultSetting = new PortSetting(9600, 8, 1, 0);
+		if (!portSettingMap.containsKey(comPort)) {
+			portSettingMap.put(comPort, defaultSetting);
+		}
+		return portSettingMap.get(comPort);
+	}
+
+	public void setPortSetting(String comPort, PortSetting portSetting) {
+		if (portSettingMap.containsKey(comPort)) {
+			portSettingMap.replace(comPort, portSetting);
+		}
+		else {portSettingMap.put(comPort, portSetting);}
+	}
+
 }

@@ -7,7 +7,7 @@ public enum LABEL {
 	HEIGHT,
 	FILTER_WIDTH,
 	FILTER_HEIGHT,
-	FILTER_LISTS,
+	APP_SETTINGS,
 	LAST_VERSION,
 	THIS_VERSION
 	;
@@ -18,7 +18,7 @@ public enum LABEL {
 			case HEIGHT -> "ScreenHeight";
 			case FILTER_WIDTH -> "FilterWindowWidth";
 			case FILTER_HEIGHT -> "FilterWindowHeight";
-			case FILTER_LISTS -> "FilterLists";
+			case APP_SETTINGS -> "Settings";
 			case LAST_VERSION -> "LastVersion";
 			case THIS_VERSION -> "ThisVersion";
 		};

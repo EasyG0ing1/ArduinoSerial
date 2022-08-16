@@ -1,5 +1,6 @@
 package com.simtechdata.arduinoserial.ui;
 
+import com.simtechdata.arduinoserial.serial.PortSetting;
 import com.simtechdata.arduinoserial.serial.Serial;
 import com.simtechdata.arduinoserial.settings.AppSettings;
 import com.simtechdata.easyfxcontrols.containers.AnchorPane;
@@ -25,6 +26,7 @@ public class MainUI {
 
 	public MainUI() {
 		makeControls();
+		loadSettings();
 		setControlActions();
 		SceneOne.set(sceneId, ap).size(width, height).centered().onCloseEvent(e -> closeScene()).onLostFocus(lostFocusListener).show();
 		tfCommand.requestFocus();
@@ -37,6 +39,7 @@ public class MainUI {
 
 	private final Map<Tab, StringProperty> serialProperties   = new HashMap<>();
 	private       Serial                   serial;
+	private boolean openingFilterEditor = false;
 	private       String                   activeComPort      = "";
 	private final String                   sceneId            = "ArduinoSerial";
 	private       double                   width              = AppSettings.get().screenWidth();
@@ -46,6 +49,7 @@ public class MainUI {
 	private final AnchorPane               ap                 = ap();
 	private final Filter                   filter;
 	private       CChoiceBox<String>       serialPorts;
+	private       CChoiceBox<Integer>      baudRates;
 	private       CLabel                   lblOpenClosed;
 	private       CLabel                   lblFiltered;
 	private       CCheckBox                checkClear;
@@ -64,12 +68,14 @@ public class MainUI {
 	private final ChangeListener<Boolean> lostFocusListener = (observable, lostFocus, isFocused) -> {
 		if (lostFocus) {
 			new Thread(() -> {
-				lostFocusMap.clear();
-				for (Tab tab : tabPane.getTabs()) {
-					String port = tab.getText();
-					lostFocusMap.put(port, serial.isOpen(port));
+				if (!openingFilterEditor) {
+					lostFocusMap.clear();
+					for (Tab tab : tabPane.getTabs()) {
+						String port = tab.getText();
+						lostFocusMap.put(port, serial.isOpen(port));
+					}
+					closePorts();
 				}
-				closePorts();
 			}).start();
 		}
 		else {
@@ -86,12 +92,20 @@ public class MainUI {
 		return new AnchorPane.Builder(width, height).build();
 	}
 
+	private void loadSettings() {
+		String json = AppSettings.get().appSettings();
+		if (!json.isEmpty()) {
+			serial.loadSettings(json);
+		}
+	}
+
 	private void makeControls() {
-		lblOpenClosed = new CLabel.Builder(ap, "Closed").leftTop(210, 18.5).width(200).alignment(Pos.CENTER_LEFT).build();
+		lblOpenClosed = new CLabel.Builder(ap, "Closed").leftTop(290, 18.5).width(200).alignment(Pos.CENTER_LEFT).build();
 		checkClear    = new CCheckBox.Builder(ap).text("Clear On New").leftTop(15, 47).checked().build();
 		btnFilter     = new Button.Builder(ap, "Edit Filter").leftTop(120, 43.5).disabled().width(75).build();
 		lblFiltered   = new CLabel.Builder(ap).leftTop(205, 49).build();
 		serialPorts   = new CChoiceBox.Builder<String>(ap, 15, -1, 15, -1).size(180, 25).build();
+		baudRates     = new CChoiceBox.Builder<Integer>(ap, 200, -1, 15, -1).size(80, 25).build();
 		checkKeepOpen = new CCheckBox.Builder(ap, -1, 15, 15, -1).text("Keep Open").build();
 		tfCommand     = new CTextField.Builder(ap, 15, 15, 75, -1).height(25).alignment(Pos.CENTER_LEFT).disabled().build();
 		tabPane       = new CTabPane.Builder(ap).bounds(15, 15, 105, 50).build();
@@ -100,6 +114,8 @@ public class MainUI {
 		serial        = new Serial();
 		serialList    = serial.getSerialPorts();
 		serialPorts.setItems(serialList);
+		baudRates.setItems(PortSetting.getBaudRates());
+		baudRates.setDisable(true);
 		lastSerialListSize = serialList.size();
 	}
 
@@ -164,13 +180,33 @@ public class MainUI {
 				});
 				tabPane.getTabs().add(tab);
 				tabPane.getSelectionModel().select(tab);
+				PortSetting p = serial.getPortSetting(activeComPort);
+				baudRates.setDisable(false);
+				int index = -1;
+				for (Integer i : baudRates.getItems()) {
+					index++;
+					if(i.equals(p.baud())) {
+						break;
+					}
+				}
+				baudRates.getSelectionModel().select(index);
 			}
+		});
+		baudRates.setOnAction(e->{
+			PortSetting p = PortSetting.getDefault();
+			int baud = baudRates.getValue();
+			PortSetting portSetting = new PortSetting(baud, p.dataBits(), p.stopBits(), p.parity());
+			serial.setPortSetting(activeComPort,portSetting);
 		});
 		checkKeepOpen.setOnAction(e -> serial.setKeepOpen(activeComPort, checkKeepOpen.isSelected()));
 		checkClear.setOnAction(e -> serial.setClearOnNew(activeComPort, checkClear.isSelected()));
 		btnClose.setOnAction(e -> closePort());
 		btnOpen.setOnAction(e -> openPort());
-		btnFilter.setOnAction(e -> filter.editFilterList(activeComPort));
+		btnFilter.setOnAction(e -> {
+			openingFilterEditor = true;
+			filter.editFilterList(activeComPort);
+			openingFilterEditor = false;
+		});
 		lblOpenClosed.visibleProperty().bind(serialPorts.getSelectionModel().selectedIndexProperty().greaterThanOrEqualTo(0));
 		btnClose.setDisable(true);
 		btnOpen.setDisable(true);
@@ -195,29 +231,28 @@ public class MainUI {
 	private TimerTask setWindow() {
 		return new TimerTask() {
 			@Override public void run() {
-				if (width != newWidth) {
-					if (newWidth > 0) {
-						AppSettings.set().screenWidth(newWidth);
+				if(!activeComPort.isEmpty()) {
+					if (width != newWidth) {
+						if (newWidth > 0) {
+							AppSettings.set().screenWidth(newWidth);
+						}
+						width = newWidth;
 					}
-					width = newWidth;
-				}
-				if (height != newHeight) {
-					if (newHeight > 0) {
-						AppSettings.set().screenHeight(newHeight);
+					if (height != newHeight) {
+						if (newHeight > 0) {
+							AppSettings.set().screenHeight(newHeight);
+						}
+						height = newHeight;
 					}
-					height = newHeight;
-				}
-				if (serial.hasFilterList(activeComPort)) {
-					Platform.runLater(() -> {
-						lblFiltered.change("Filter List Active");
-						lblFiltered.setTextFill(Color.color(0, .6, 0));
-					});
-				}
-				else {
-					Platform.runLater(() -> {
-						lblFiltered.change("No Filter List");
-						lblFiltered.setTextFill(Color.color(.5, 0, 0));
-					});
+					if (serial.hasFilterList(activeComPort)) {
+						Platform.runLater(() -> {
+							lblFiltered.change("Filter List Active");
+							lblFiltered.setTextFill(Color.color(0, .6, 0));
+						});
+					}
+					else {
+						Platform.runLater(() -> lblFiltered.change(""));
+					}
 				}
 			}
 		};
@@ -229,7 +264,7 @@ public class MainUI {
 			String  comPort  = tab.getText();
 			boolean keepOpen = serial.keepOpen(comPort);
 			if (!keepOpen) {
-				String closedResponse = serial.closePort(tab.getText());
+				String closedResponse = serial.closePort(tab.getText(), "MainUI.closePorts");
 				if (tab.equals(activeTab)) {
 					Platform.runLater(() -> {
 						lblOpenClosed.change(closedResponse);
@@ -241,7 +276,7 @@ public class MainUI {
 	}
 
 	private void closePort() {
-		lblOpenClosed.change(serial.closePort(activeComPort));
+		lblOpenClosed.change(serial.closePort(activeComPort, "MainUI.closePort"));
 		lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
 	}
 
@@ -284,7 +319,7 @@ public class MainUI {
 	private void closeScene() {
 		SceneOne.close(sceneId);
 		for (Tab tab : tabPane.getTabs()) {
-			serial.closePort(tab.getText());
+			serial.closePort(tab.getText(), "MainUI.closeScene");
 		}
 		System.exit(0);
 	}

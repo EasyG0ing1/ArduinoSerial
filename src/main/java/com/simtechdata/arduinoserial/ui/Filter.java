@@ -25,7 +25,6 @@ public class Filter {
 		this.serial = serial;
 		makeControls();
 		setControlActions();
-		loadData();
 		windowTimer.scheduleAtFixedRate(setWindow(), 3000, 500);
 	}
 
@@ -86,13 +85,6 @@ public class Filter {
 		btnRemove.disableProperty().bind(lvWordList.getSelectionModel().selectedIndexProperty().lessThan(0));
 	}
 
-	private void loadData() {
-		String json = AppSettings.get().filterLists();
-		if (!json.isEmpty()) {
-			serial.setFilterLists(json);
-		}
-	}
-
 	private void loadWordList() {
 		lvWordList.getItems().clear();
 		if (serial.hasFilterList(activeComPort)) {
@@ -110,7 +102,6 @@ public class Filter {
 			wordList.sort(Comparator.comparing(String::toString));
 			lvWordList.setItems(FXCollections.observableArrayList(wordList)); //Because this method is called whenever a new word is entered
 			serial.setFilterList(activeComPort, wordList);
-			AppSettings.set().filterLists(serial.getJsonFilterLists());
 		}
 		else {serial.clearFilterList(activeComPort);}
 	}
@@ -143,6 +134,6 @@ public class Filter {
 			SceneOne.getScene(sceneId).heightProperty().addListener((observable, oldValue, newValue) -> newHeight = (Double) newValue);
 		}
 		loadWordList();
-		SceneOne.show(sceneId);
+		SceneOne.showAndWait(sceneId);
 	}
 }
