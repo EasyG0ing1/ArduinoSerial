@@ -32,7 +32,7 @@ working with, and I decided to publish it in case anyone else might benefit from
 Click on releases to the right and download your installer.
 
 - Mac installer - simply open the DMG file and drag the app to your Applications folder.
-- Windows - coming soon.
+- Windows - use the .exe for standard Windows installation.
 
 The Java runtime is packaged inside the app and it will not expand any files out onto your hard drive.
 It will remain as an isolated package. The only exception is the settings file, which is managed based

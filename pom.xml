@@ -139,10 +139,19 @@
                         <configuration>
                             <platform>auto</platform>
                             <createZipball>false</createZipball>
-                            <createTarball>true</createTarball>
+                            <createTarball>false</createTarball>
                             <vmArgs>
                                 <vmArg>--enable-preview</vmArg>
                             </vmArgs>
+                            <winConfig>
+                                <headerType>gui</headerType>
+                                <generateSetup>true</generateSetup>
+                                <generateMsi>true</generateMsi>
+                                <generateMsm>false</generateMsm>
+                                <setupMode>askTheUser</setupMode>
+                                <createDesktopIconTask>true</createDesktopIconTask>
+                                <removeOldLibs>true</removeOldLibs>
+                            </winConfig>
                             <macConfig>
                                 <generateDmg>true</generateDmg>
                                 <generatePkg>false</generatePkg>
