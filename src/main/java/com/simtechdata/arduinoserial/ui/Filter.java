@@ -134,6 +134,6 @@ public class Filter {
 			SceneOne.getScene(sceneId).heightProperty().addListener((observable, oldValue, newValue) -> newHeight = (Double) newValue);
 		}
 		loadWordList();
-		SceneOne.showAndWait(sceneId);
+		SceneOne.show(sceneId);
 	}
 }

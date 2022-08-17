@@ -11,11 +11,13 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.paint.Color;
+import javafx.stage.WindowEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +30,7 @@ public class MainUI {
 		makeControls();
 		loadSettings();
 		setControlActions();
-		SceneOne.set(sceneId, ap).size(width, height).centered().onCloseEvent(e -> closeScene()).onLostFocus(lostFocusListener).show();
+		SceneOne.set(sceneId, ap).size(width, height).centered().onCloseEvent(e -> closeScene()).onShownEvent(onShownEventHandler).onLostFocus(sceneLostFocusListener).show();
 		tfCommand.requestFocus();
 		serialListTimer.scheduleAtFixedRate(checkSerialPorts(), 3000, 500);
 		sceneSizeTimer.scheduleAtFixedRate(setWindow(), 3000, 500);
@@ -39,7 +41,6 @@ public class MainUI {
 
 	private final Map<Tab, StringProperty> serialProperties   = new HashMap<>();
 	private       Serial                   serial;
-	private boolean openingFilterEditor = false;
 	private       String                   activeComPort      = "";
 	private final String                   sceneId            = "ArduinoSerial";
 	private       double                   width              = AppSettings.get().screenWidth();
@@ -65,26 +66,66 @@ public class MainUI {
 	private       int                      lastSerialListSize = 0;
 	private final Map<String, Boolean>     lostFocusMap       = new HashMap<>();
 
-	private final ChangeListener<Boolean> lostFocusListener = (observable, lostFocus, isFocused) -> {
+	private final EventHandler<WindowEvent> onShownEventHandler = event -> new Thread(() -> {
+		for (String port : lostFocusMap.keySet()) {
+			boolean openPort = lostFocusMap.get(port);
+			if (openPort && !serial.keepOpen(port))
+				openPort(port);
+		}
+		lostFocusMap.clear();
+	}).start();
+
+	private final ChangeListener<Boolean> sceneLostFocusListener = (observable, lostFocus, isFocused) -> {
 		if (lostFocus) {
 			new Thread(() -> {
-				if (!openingFilterEditor) {
-					lostFocusMap.clear();
-					for (Tab tab : tabPane.getTabs()) {
-						String port = tab.getText();
-						lostFocusMap.put(port, serial.isOpen(port));
-					}
-					closePorts();
+				lostFocusMap.clear();
+				for (Tab tab : tabPane.getTabs()) {
+					String port = tab.getText();
+					lostFocusMap.put(port, serial.isOpen(port));
 				}
+				closePorts();
 			}).start();
 		}
-		else {
+		if (isFocused) {
+			if(SceneOne.isShowing(sceneId)) {
+				new Thread(() -> {
+					for (String port : lostFocusMap.keySet()) {
+						boolean openPort = lostFocusMap.get(port);
+						if (openPort && !serial.keepOpen(port)) openPort(port);
+					}
+					lostFocusMap.clear();
+				}).start();
+			}
+		}
+	};
+
+	private final ChangeListener<Boolean> tabSelectedListener = (observable, notSelected, isSelected) -> {
+		Tab tab = tabPane.getSelectionModel().getSelectedItem();
+		if (isSelected) {
+			activeComPort = tab.getText();
+			if (serial.isOpen(activeComPort)) {
+				lblOpenClosed.change("Open");
+				lblOpenClosed.setTextFill(Color.color(0, .6, 0));
+			}
+			else {
+				lblOpenClosed.change("Closed");
+				lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
+			}
+			btnOpen.disableProperty().bind(serial.disableWhenOpenProperty(activeComPort));
+			btnClose.disableProperty().bind(serial.disableWhenClosedProperty(activeComPort));
+			tfCommand.disableProperty().bind(serial.disableWhenClosedProperty(activeComPort));
 			new Thread(() -> {
-				for (String port : lostFocusMap.keySet()) {
-					boolean openPort = lostFocusMap.get(port);
-					if (openPort && !serial.keepOpen(port)) openPort(port);
+				try {
+					Thread.sleep(150);
+					Platform.runLater(() -> tfCommand.requestFocus());
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
 				}
 			}).start();
+			checkKeepOpen.setSelected(serial.keepOpen(activeComPort));
+			checkClear.setSelected(serial.clearOnNew(activeComPort));
+			btnFilter.setDisable(false);
 		}
 	};
 
@@ -132,81 +173,19 @@ public class MainUI {
 		});
 		serialPorts.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
 			activeComPort = newValue;
-			ObservableList<Tab> tabList = tabPane.getTabs();
-			boolean             addTab  = true;
-			for (Tab tab : tabList) {
-				if (tab.getText().equals(activeComPort)) {
-					addTab = false;
-					break;
-				}
-			}
-			if (addTab) {
-				Tab       tab = new Tab(activeComPort);
-				CTextArea ta  = new CTextArea.Builder().editable(false).size(width, height).build();
-				serialProperties.put(tab, ta.textProperty());
-				AnchorPane newAp = new AnchorPane.Builder().build();
-				newAp.addNode(ta, 0, 0, 0, 0);
-				tab.setContent(newAp);
-				tab.selectedProperty().addListener((observable1, wasSelected, isSelected) -> {
-					if (isSelected) {
-						activeComPort = tab.getText();
-						if (serial.isOpen(activeComPort)) {
-							lblOpenClosed.change("Open");
-							lblOpenClosed.setTextFill(Color.color(0, .6, 0));
-						}
-						else {
-							lblOpenClosed.change("Closed");
-							lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
-						}
-						btnOpen.disableProperty().unbind();
-						btnOpen.disableProperty().bind(serial.disableWhenOpenProperty(activeComPort));
-						btnClose.disableProperty().unbind();
-						btnClose.disableProperty().bind(serial.disableWhenClosedProperty(activeComPort));
-						tfCommand.disableProperty().unbind();
-						tfCommand.disableProperty().bind(serial.disableWhenClosedProperty(activeComPort));
-						new Thread(() -> {
-							try {
-								Thread.sleep(150);
-								Platform.runLater(() -> tfCommand.requestFocus());
-							}
-							catch (InterruptedException e) {
-								throw new RuntimeException(e);
-							}
-						}).start();
-						checkKeepOpen.setSelected(serial.keepOpen(activeComPort));
-						checkClear.setSelected(serial.clearOnNew(activeComPort));
-						btnFilter.setDisable(false);
-					}
-				});
-				tabPane.getTabs().add(tab);
-				tabPane.getSelectionModel().select(tab);
-				PortSetting p = serial.getPortSetting(activeComPort);
-				baudRates.setDisable(false);
-				int index = -1;
-				for (Integer i : baudRates.getItems()) {
-					index++;
-					if(i.equals(p.baud())) {
-						break;
-					}
-				}
-				baudRates.getSelectionModel().select(index);
-			}
+			selectActiveComPort();
 		});
-		baudRates.setOnAction(e->{
-			PortSetting p = PortSetting.getDefault();
-			int baud = baudRates.getValue();
+		baudRates.setOnAction(e -> {
+			PortSetting p           = PortSetting.getDefault();
+			int         baud        = baudRates.getValue();
 			PortSetting portSetting = new PortSetting(baud, p.dataBits(), p.stopBits(), p.parity());
-			serial.setPortSetting(activeComPort,portSetting);
+			serial.setPortSetting(activeComPort, portSetting);
 		});
 		checkKeepOpen.setOnAction(e -> serial.setKeepOpen(activeComPort, checkKeepOpen.isSelected()));
 		checkClear.setOnAction(e -> serial.setClearOnNew(activeComPort, checkClear.isSelected()));
-		btnClose.setOnAction(e -> closePort());
-		btnOpen.setOnAction(e -> openPort());
-		btnFilter.setOnAction(e -> {
-			openingFilterEditor = true;
-			filter.editFilterList(activeComPort);
-			openingFilterEditor = false;
-		});
+		btnClose.setOnAction(e -> closeActiveComPort());
+		btnOpen.setOnAction(e -> openActiveComPort());
+		btnFilter.setOnAction(e -> filter.editFilterList(activeComPort));
 		lblOpenClosed.visibleProperty().bind(serialPorts.getSelectionModel().selectedIndexProperty().greaterThanOrEqualTo(0));
 		btnClose.setDisable(true);
 		btnOpen.setDisable(true);
@@ -214,6 +193,40 @@ public class MainUI {
 		Tooltip.install(checkClear, new Tooltip("This will clear the window every time new data comes in from the serial port, preventing the need to scroll history."));
 		Tooltip.install(btnFilter, new Tooltip("Text coming from the serial port will only be displayed if any single line of text contains any word in your filter list.\nAn empty filter list will show ALL text coming from the serial port"));
 		Tooltip.install(checkKeepOpen, new Tooltip("If checked, the current com port will be kept open even when you change focus to a different program.\nHowever, if the com port is closed, it will remain closed."));
+	}
+
+	private void selectActiveComPort() {
+		ObservableList<Tab> tabList = tabPane.getTabs();
+		boolean             addTab  = true;
+		for (Tab tab : tabList) {
+			if (tab.getText().equals(activeComPort)) {
+				addTab = false;
+				break;
+			}
+		}
+		if (addTab) {
+			Tab       tab = new Tab(activeComPort);
+			CTextArea ta  = new CTextArea.Builder().editable(false).size(width, height).build();
+			serialProperties.put(tab, ta.textProperty());
+			AnchorPane newAp = new AnchorPane.Builder().build();
+			newAp.addNode(ta, 0, 0, 0, 0);
+			tab.setContent(newAp);
+			tab.selectedProperty().addListener(tabSelectedListener);
+			tabPane.getTabs().add(tab);
+			tabPane.getSelectionModel().select(tab);
+			PortSetting p = serial.getPortSetting(activeComPort);
+			baudRates.setDisable(false);
+			int index = -1;
+			for (Integer i : baudRates.getItems()) {
+				index++;
+				if (i.equals(p.baud())) {
+					break;
+				}
+			}
+			baudRates.getSelectionModel().select(index);
+			serial.resetOpenState(activeComPort);
+		}
+		btnOpen.disableProperty().bind(serial.disableWhenOpenProperty(activeComPort));
 	}
 
 	private TimerTask checkSerialPorts() {
@@ -231,7 +244,7 @@ public class MainUI {
 	private TimerTask setWindow() {
 		return new TimerTask() {
 			@Override public void run() {
-				if(!activeComPort.isEmpty()) {
+				if (!activeComPort.isEmpty()) {
 					if (width != newWidth) {
 						if (newWidth > 0) {
 							AppSettings.set().screenWidth(newWidth);
@@ -264,27 +277,32 @@ public class MainUI {
 			String  comPort  = tab.getText();
 			boolean keepOpen = serial.keepOpen(comPort);
 			if (!keepOpen) {
-				String closedResponse = serial.closePort(tab.getText(), "MainUI.closePorts");
-				if (tab.equals(activeTab)) {
-					Platform.runLater(() -> {
-						lblOpenClosed.change(closedResponse);
-						lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
-					});
+				if(serial.isOpen(comPort)) {
+					String closedResponse = serial.closePort(tab.getText());
+					System.out.println("Port Closed: " + tab.getText());
+					if (tab.equals(activeTab)) {
+						Platform.runLater(() -> {
+							lblOpenClosed.change(closedResponse);
+							lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
+						});
+					}
 				}
 			}
 		}
 	}
 
-	private void closePort() {
-		lblOpenClosed.change(serial.closePort(activeComPort, "MainUI.closePort"));
+	private void closeActiveComPort() {
+		lblOpenClosed.change(serial.closePort(activeComPort));
 		lblOpenClosed.setTextFill(Color.color(.5, 0, 0));
 	}
 
-	private void openPort(String port) {
+	private void openPort(String comPort) {
 		Tab activeTab = tabPane.getSelectionModel().getSelectedItem();
 		for (Tab tab : tabPane.getTabs()) {
-			if (tab.getText().equals(port)) {
-				boolean success = serial.openPort(port, serialProperties.get(tab));
+			if (tab.getText().equals(comPort)) {
+				boolean success = serial.openPort(comPort, serialProperties.get(tab));
+				if(success)
+					System.out.println("Port Opened: " + comPort);
 				if (tab.equals(activeTab)) {
 					Platform.runLater(() -> {
 						if (success) {
@@ -301,7 +319,7 @@ public class MainUI {
 		}
 	}
 
-	private void openPort() {
+	private void openActiveComPort() {
 		Tab tab = tabPane.getSelectionModel().getSelectedItem();
 		lblOpenClosed.change("Closing...");
 		lblOpenClosed.setTextFill(Color.color(.6, .6, 0));
@@ -318,8 +336,13 @@ public class MainUI {
 
 	private void closeScene() {
 		SceneOne.close(sceneId);
+		System.out.println(" ");
 		for (Tab tab : tabPane.getTabs()) {
-			serial.closePort(tab.getText(), "MainUI.closeScene");
+			String comPort = tab.getText();
+			if (serial.isOpen(comPort)) {
+				serial.closePort(comPort);
+				System.out.println("Port Closed: " + comPort);
+			}
 		}
 		System.exit(0);
 	}

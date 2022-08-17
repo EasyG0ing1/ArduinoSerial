@@ -83,11 +83,11 @@ public class Serial {
 		return false;
 	}
 
-	public String closePort(String comPort, String caller) {
+	public String closePort(String comPort) {
 		if(comPort.isEmpty()) return "Closed";
 		if (PortMap.have(comPort)) {
 			if (PortMap.isOpen(comPort)) {
-				if (PortMap.close(comPort, caller)) {
+				if (PortMap.close(comPort)) {
 					return "Closed";
 				}
 				else {
@@ -187,5 +187,9 @@ public class Serial {
 	public void setPortSetting(String comPort, PortSetting portSetting) {
 		if(comPort.isEmpty()) return;
 		PortMap.setPortSetting(comPort,portSetting);
+	}
+
+	public void resetOpenState(String comPort) {
+		PortMap.resetOpenState(comPort);
 	}
 }

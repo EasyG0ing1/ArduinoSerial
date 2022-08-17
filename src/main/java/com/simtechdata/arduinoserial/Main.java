@@ -2,6 +2,7 @@ package com.simtechdata.arduinoserial;
 
 import com.simtechdata.arduinoserial.settings.AppSettings;
 import com.simtechdata.arduinoserial.ui.MainUI;
+import com.simtechdata.sceneonefx.SceneOne;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -14,6 +15,7 @@ public class Main extends Application {
 			AppSettings.set().thisVersion("1.0.3");
 			cleanMetadata();
 		}
+		SceneOne.disableNotice();
 		new MainUI();
 	}
 
@@ -52,4 +54,5 @@ public class Main extends Application {
 		}
 		launch(args);
 	}
+
 }

@@ -44,10 +44,10 @@ class PortMap {
 		return open;
 	}
 
-	public static boolean close(String comPort, String caller) {
+	public static boolean close(String comPort) {
 		boolean closed = false;
 		if (have(comPort)) {
-			closed = map.get(comPort).close(caller);
+			closed = map.get(comPort).close();
 			settings.setOpen(comPort, !closed);
 		}
 		return closed;
@@ -144,6 +144,10 @@ class PortMap {
 			settings.setOpen(comPort, map.get(comPort).isOpen());
 		}
 		save();
+	}
+
+	public static void resetOpenState(String comPort) {
+		settings.resetOpenState(comPort);
 	}
 
 	private static void save() {

@@ -20,7 +20,7 @@ I usually write my code for Arduino's in the CLion IDE with PlatformIO, because 
 Arduino IDE. This makes it really easy to work with multiple Arduinos at the same time so that I only need
 to switch to different open projects which are each assigned to a different Arduino.
 
-However, the serial interface, even in the CLion environment can become cumbersome to use, because you have
+However, the serial interface, even in the CLion environment can be cumbersome to use, because you have
 to manually close com ports before attempting to upload sketches and there are other "clumsy" issues with
 the serial interface in the IDE.
 

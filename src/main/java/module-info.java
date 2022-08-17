@@ -1,6 +1,7 @@
 module com.simtechdata.arduinoserial {
     requires javafx.controls;
     requires com.simtechdata.sceneonefx;
+	//requires SceneOneFX.TEST;
 	requires org.apache.commons.codec;
     requires EasyFXControls;
     requires java.datatransfer;

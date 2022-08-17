@@ -95,4 +95,8 @@ public class Settings {
 		else {portSettingMap.put(comPort, portSetting);}
 	}
 
+	public void resetOpenState(String comPort) {
+		if(openPropertyMap.containsKey(comPort))
+			openPropertyMap.get(comPort).setValue(false);
+	}
 }

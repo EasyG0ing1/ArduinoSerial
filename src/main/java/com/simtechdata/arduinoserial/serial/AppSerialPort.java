@@ -24,9 +24,8 @@ public class AppSerialPort {
 		return open;
 	}
 
-	public boolean close(String caller) {
+	public boolean close() {
 		wasOpen = serialPort.closePort();
-		System.out.println("Port Closed by " + caller);
 		return wasOpen;
 	}
 
