@@ -28,8 +28,8 @@ public class MainUI {
 
 	public MainUI() {
 		makeControls();
-		loadSettings();
 		setControlActions();
+		loadSettings();
 		SceneOne.set(sceneId, ap).size(width, height).centered().onCloseEvent(e -> closeScene()).onShownEvent(onShownEventHandler).onLostFocus(sceneLostFocusListener).show();
 		tfCommand.requestFocus();
 		serialListTimer.scheduleAtFixedRate(checkSerialPorts(), 3000, 500);
@@ -220,10 +220,10 @@ public class MainUI {
 			for (Integer i : baudRates.getItems()) {
 				index++;
 				if (i.equals(p.baud())) {
+					baudRates.getSelectionModel().select(index);
 					break;
 				}
 			}
-			baudRates.getSelectionModel().select(index);
 			serial.resetOpenState(activeComPort);
 		}
 		btnOpen.disableProperty().bind(serial.disableWhenOpenProperty(activeComPort));
@@ -279,7 +279,6 @@ public class MainUI {
 			if (!keepOpen) {
 				if(serial.isOpen(comPort)) {
 					String closedResponse = serial.closePort(tab.getText());
-					System.out.println("Port Closed: " + tab.getText());
 					if (tab.equals(activeTab)) {
 						Platform.runLater(() -> {
 							lblOpenClosed.change(closedResponse);
@@ -301,8 +300,6 @@ public class MainUI {
 		for (Tab tab : tabPane.getTabs()) {
 			if (tab.getText().equals(comPort)) {
 				boolean success = serial.openPort(comPort, serialProperties.get(tab));
-				if(success)
-					System.out.println("Port Opened: " + comPort);
 				if (tab.equals(activeTab)) {
 					Platform.runLater(() -> {
 						if (success) {
@@ -336,12 +333,10 @@ public class MainUI {
 
 	private void closeScene() {
 		SceneOne.close(sceneId);
-		System.out.println(" ");
 		for (Tab tab : tabPane.getTabs()) {
 			String comPort = tab.getText();
 			if (serial.isOpen(comPort)) {
 				serial.closePort(comPort);
-				System.out.println("Port Closed: " + comPort);
 			}
 		}
 		System.exit(0);

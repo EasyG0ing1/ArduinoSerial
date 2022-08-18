@@ -53,6 +53,10 @@ public class AppSerialPort {
 		}
 	}
 
+	public Integer getBaudRate() {
+		return serialPort.getBaudRate();
+	}
+
 	public Boolean isOpen() {
 		return serialPort.isOpen();
 	}

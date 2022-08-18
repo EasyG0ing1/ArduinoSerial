@@ -189,6 +189,10 @@ public class Serial {
 		PortMap.setPortSetting(comPort,portSetting);
 	}
 
+	public Integer getBaudRate(String comPort) {
+		return PortMap.getBaudRate(comPort);
+	}
+
 	public void resetOpenState(String comPort) {
 		PortMap.resetOpenState(comPort);
 	}

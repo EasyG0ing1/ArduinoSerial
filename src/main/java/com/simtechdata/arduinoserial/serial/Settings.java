@@ -99,4 +99,5 @@ public class Settings {
 		if(openPropertyMap.containsKey(comPort))
 			openPropertyMap.get(comPort).setValue(false);
 	}
+
 }

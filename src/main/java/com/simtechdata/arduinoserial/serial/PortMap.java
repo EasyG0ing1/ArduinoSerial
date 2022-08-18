@@ -77,6 +77,9 @@ class PortMap {
 		GsonBuilder g    = new GsonBuilder();
 		Gson        gson = FxGson.addFxSupport(g).setPrettyPrinting().create();
 		settings = gson.fromJson(json, Settings.class);
+		for(String comPort : map.keySet()) {
+			map.get(comPort).applyPortSettings(settings.getPortSetting(comPort));
+		}
 	}
 
 	public static List<String> getFilterList(String comPort) {
@@ -144,6 +147,10 @@ class PortMap {
 			settings.setOpen(comPort, map.get(comPort).isOpen());
 		}
 		save();
+	}
+
+	public static Integer getBaudRate(String comPort) {
+		return map.get(comPort).getBaudRate();
 	}
 
 	public static void resetOpenState(String comPort) {
